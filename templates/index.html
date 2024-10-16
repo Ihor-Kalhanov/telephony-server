@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vocode Telephony Server</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 h-screen flex flex-col justify-center items-center">
+    <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+        <h1 class="text-3xl font-bold mb-6 text-center">Welcome to Vocode Caller</h1>
+
+        <form id="callForm" class="space-y-4">
+            <div>
+                <label for="to_phone" class="block text-sm font-medium text-gray-700">Enter your phone number:</label>
+                <input type="tel" id="to_phone" name="to_phone" required
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                       placeholder="+1234567890">
+            </div>
+            <button type="submit" class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                Start Call
+            </button>
+        </form>
+
+        <div id="callStatus" class="mt-4 p-2 text-center hidden"></div>
+
+        {% if env_vars %}
+        <div class="mt-8">
+            <h2 class="text-xl font-semibold mb-2">Environment Variables Status:</h2>
+            <ul class="list-disc list-inside">
+                {% for key, value in env_vars.items() %}
+                <li>{{ key }}: {% if value %}✅{% else %}❌{% endif %}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        document.getElementById('callForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const phoneNumber = document.getElementById('to_phone').value;
+            const statusDiv = document.getElementById('callStatus');
+
+            fetch('/start_outbound_call', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `to_phone=${encodeURIComponent(phoneNumber)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                statusDiv.classList.remove('hidden', 'bg-red-100', 'bg-green-100');
+                if (data.status === 'success') {
+                    statusDiv.classList.add('bg-green-100');
+                    statusDiv.textContent = 'Call started successfully!';
+                } else {
+                    statusDiv.classList.add('bg-red-100');
+                    statusDiv.textContent = 'Failed to start call. Please try again.';
+                }
+            })
+            .catch(error => {
+                statusDiv.classList.remove('hidden', 'bg-green-100');
+                statusDiv.classList.add('bg-red-100');
+                statusDiv.textContent = 'An error occurred. Please try again.';
+                console.error('Error:', error);
+            });
+        });
+    </script>
+</body>
+</html>
